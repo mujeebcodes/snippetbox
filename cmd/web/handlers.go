@@ -1,35 +1,36 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
+
+	"github.com/mujeebcodes/snippetbox/internal/models"
+	"github.com/mujeebcodes/snippetbox/internal/validator"
 )
 
+
+type snippetCreateForm struct {
+    Title               string `form:"title"`
+    Content             string `form:"content"`
+    Expires             int    `form:"expires"`
+    validator.Validator `form:"-"`
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
-    w.Header().Add("Server", "Go")
 
-    files := []string{
-        "./ui/html/base.tmpl.html",
-        "./ui/html/partials/nav.tmpl.html",
-        "./ui/html/pages/home.tmpl.html",
-    }
-
-    ts, err := template.ParseFiles(files...)
+    snippets, err := app.snippets.Latest()
     if err != nil {
         app.serverError(w, r, err)
         return
     }
 
-    err = ts.ExecuteTemplate(w, "base", nil)
-
-    if err != nil {
-        app.serverError(w, r, err)
-    }
+    data := app.newTemplateData(r)
+    data.Snippets = snippets
 
 
-    w.Write([]byte("Hello from Snippetbox"))
+    app.render(w, r, http.StatusOK, "home.tmpl.html", data)
 }
 
 func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
@@ -39,14 +40,70 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    fmt.Fprintf(w, "Display a specific snippet with ID %d...", id)
+    snippet, err := app.snippets.Get(id)
+    if err != nil {
+        if errors.Is(err, models.ErrNoRecord) {
+            http.NotFound(w, r)
+        } else {
+            app.serverError(w, r, err)
+        }
+        return
+    }
+
+
+    data := app.newTemplateData(r)
+    data.Snippet = snippet
+
+    app.render(w, r, http.StatusOK, "view.tmpl.html", data)
 }
 
 func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
-    w.Write([]byte("Display a form for creating a new snippet..."))
+    data := app.newTemplateData(r)
+
+    // Initialize a new snippetCreateForm instance and pass it to the template.
+    // Notice how this is also a great opportunity to set any default or
+    // 'initial' values for the form --- here we set the initial value for the 
+    // snippet expiry to 365 days.
+    data.Form = snippetCreateForm{
+        Expires: 365,
+    }
+
+
+    app.render(w, r, http.StatusOK, "create.tmpl.html", data)
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
-    w.WriteHeader(http.StatusCreated)
-    w.Write([]byte("Save a new snippet..."))
+
+    var form snippetCreateForm
+
+    err := app.decodePostForm(r, &form)
+    if err != nil {
+        app.clientError(w, http.StatusBadRequest)
+        return
+    }
+
+
+    form.CheckField(validator.NotBlank(form.Title), "title", "This field cannot be blank")
+    form.CheckField(validator.MaxChars(form.Title, 100), "title", "This field cannot be more than 100 characters long")
+    form.CheckField(validator.NotBlank(form.Content), "content", "This field cannot be blank")
+    form.CheckField(validator.PermittedValue(form.Expires, 1, 7, 365), "expires", "This field must equal 1, 7 or 365")
+
+
+    if !form.Valid() {
+        data := app.newTemplateData(r)
+        data.Form = form
+        app.render(w, r, http.StatusUnprocessableEntity, "create.tmpl.html", data)
+        return
+    }
+
+
+
+    id, err := app.snippets.Insert(form.Title, form.Content, form.Expires)
+    if err != nil {
+        app.serverError(w, r, err)
+    }
+
+    app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
+
+    http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
