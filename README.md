@@ -11,7 +11,6 @@ Snippetbox is a web application for pasting and sharing snippets of text, inspir
 - Middleware for enhanced functionality.
 - A MySQL database for storing snippets.
 
-
 ## Project Structure 📂  
 The project follows a modular structure for scalability and maintainability:  
 ```
@@ -35,11 +34,24 @@ The project follows a modular structure for scalability and maintainability:
 ├── tls                # TLS certificates for HTTPS
 │   ├── cert.pem            # Public certificate
 │   └── key.pem             # Private key
-└── ui
-    ├── html           # HTML templates for the application
-    └── static         # Static assets (CSS, JS, images)
+├── ui
+│   ├── html           # HTML templates for the application
+│   │   ├── pages            # Individual pages
+│   │   │   ├── create.tmpl.html
+│   │   │   ├── home.tmpl.html
+│   │   │   ├── login.tmpl.html
+│   │   │   ├── signup.tmpl.html
+│   │   │   └── view.tmpl.html
+│   │   └── partials         # Reusable components
+│   │       ├── base.tmpl.html
+│   │       └── nav.tmpl.html
+│   └── static         # Static assets (CSS, JS, images)
+│       ├── css
+│       ├── img
+│       └── js
+├── efs.go             # Entry point for embedded file system
+└── .gitignore         # Git ignore file
 ```
-
 
 ## Getting Started 🚀  
 
