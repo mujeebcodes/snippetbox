@@ -11,17 +11,35 @@ Snippetbox is a web application for pasting and sharing snippets of text, inspir
 - Middleware for enhanced functionality.
 - A MySQL database for storing snippets.
 
+
 ## Project Structure 📂  
 The project follows a modular structure for scalability and maintainability:  
 ```
 .
-├── cmd/web         # Main application entry point and handlers
-├── internal        # Reusable code such as database models and helpers
-├── ui
-│   ├── html        # HTML templates for the application
-│   └── static      # Static assets (CSS, JS, images)
-└── go.mod          # Go module dependencies
+├── cmd
+│   └── web            # Main application entry point and handlers
+│       ├── context.go       # Context-related logic
+│       ├── handlers.go      # HTTP handlers
+│       ├── helpers.go       # Utility functions
+│       ├── main.go          # Application entry point
+│       ├── middleware.go    # Middleware for HTTP requests
+│       ├── routes.go        # HTTP route configurations
+│       └── templates.go     # HTML template helpers
+├── internal
+│   ├── models         # Database models and related logic
+│   │   ├── errors.go        # Custom error definitions
+│   │   ├── snippets.go      # Snippet model and queries
+│   │   └── users.go         # User model and queries
+│   └── validator      # Input validation logic
+│       └── validator.go     # Validators for user input
+├── tls                # TLS certificates for HTTPS
+│   ├── cert.pem            # Public certificate
+│   └── key.pem             # Private key
+└── ui
+    ├── html           # HTML templates for the application
+    └── static         # Static assets (CSS, JS, images)
 ```
+
 
 ## Getting Started 🚀  
 
